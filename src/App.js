@@ -523,7 +523,7 @@ function App() {
 
 export default function AppWithProvider() {
   return (
-    <TonConnectUIProvider manifestUrl="https://your-manifest-url.json">
+    <TonConnectUIProvider manifestUrl="https://epinminiapp-ebgjnxx0k-sefik-emre-akars-projects.vercel.app/tonconnect-manifest.json">
       <App />
     </TonConnectUIProvider>
   );
