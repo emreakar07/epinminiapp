@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { WebApp } from '@twa-dev/sdk';
+import WebApp from '@twa-dev/sdk';
 import { TonConnectButton } from '@tonconnect/ui-react';
 import { TonConnectUIProvider, useTonConnectUI } from '@tonconnect/ui-react';
 import { beginCell, toNano, Address } from '@ton/core';
@@ -96,7 +96,7 @@ function App() {
   useEffect(() => {
     try {
       if (!WebApp.isInitialized) {
-        throw new Error('Telegram WebApp başlatılamadı');
+        WebApp.init();
       }
 
       WebApp.ready();
