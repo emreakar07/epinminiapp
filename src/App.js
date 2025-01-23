@@ -39,7 +39,7 @@ const SUPPORTED_NETWORKS = {
         address: '0xdac17f958d2ee523a2206206994597c13d831ec7'
       }
     },
-    rpcUrl: 'https://mainnet.infura.io/v3/YOUR-PROJECT-ID',
+    rpcUrl: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`,
     explorer: 'https://etherscan.io/tx/'
   },
   BSC: {
@@ -107,13 +107,7 @@ function App() {
   const [error, setError] = useState(null);
   const [txStatus, setTxStatus] = useState('');
   const [txHash, setTxHash] = useState('');
-
-  // Blockchain spesifik işlemler için providers
   const [providers, setProviders] = useState({});
-
-  const [transactionHistory, setTransactionHistory] = useState([]);
-
-  const [prices, setPrices] = useState({});
 
   useEffect(() => {
     try {
@@ -158,9 +152,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Blockchain provider'ları başlat
     initializeProviders();
-  }, []);
+  }, [paymentData]);
 
   const initializeProviders = async () => {
     const newProviders = {};
@@ -179,7 +172,7 @@ function App() {
     if (paymentData?.blockchain === 'TRON') {
       const tronWeb = new TronWeb({
         fullHost: SUPPORTED_NETWORKS.TRON.rpcUrl,
-        headers: { "TRON-PRO-API-KEY": 'your-api-key' }
+        headers: { "TRON-PRO-API-KEY": process.env.REACT_APP_TRON_API_KEY }
       });
       newProviders.tron = tronWeb;
     }
@@ -189,7 +182,6 @@ function App() {
 
   const monitorTransaction = async (hash) => {
     try {
-      // İşlem durumunu kontrol et
       const tx = await wallet.client.getTransaction(hash);
       if (tx.status === 'confirmed') {
         setTxStatus('success');
@@ -241,7 +233,17 @@ function App() {
       await monitorTransaction(tx.hash);
       
     } catch (err) {
-      handleError(err);
+      setError({
+        title: 'Ödeme Hatası',
+        message: err.message
+      });
+      WebApp.showPopup({
+        title: 'Hata',
+        message: err.message,
+        buttons: [{
+          type: 'ok'
+        }]
+      });
     } finally {
       setLoading(false);
     }
@@ -355,7 +357,7 @@ function App() {
         if (paymentData.paymentMethod === 'USDT') {
           return `${paymentData.blockchain.toLowerCase()}:${networkData.currencies.USDT.address}/transfer?address=${paymentData.walletAddress}&uint256=${paymentData.amount * (10 ** networkData.currencies.USDT.decimals)}`;
         }
-        return `${paymentData.blockchain.toLowerCase()}:${paymentData.walletAddress}@${networkData.chainId}?value=${paymentData.amount * (10 ** 18)}`;
+        return `${paymentData.blockchain.toLowerCase()}:${paymentData.walletAddress}?value=${paymentData.amount * (10 ** 18)}`;
         
       case 'SOLANA':
         return `solana:${paymentData.walletAddress}?amount=${paymentData.amount}&label=Payment`;
