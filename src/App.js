@@ -4,7 +4,14 @@ import { TonConnectButton } from '@tonconnect/ui-react';
 import { TonConnectUIProvider, useTonConnectUI } from '@tonconnect/ui-react';
 import { beginCell, toNano, Address } from '@ton/core';
 import Web3 from 'web3';
-import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+import { 
+  Connection, 
+  PublicKey, 
+  Transaction,
+  SystemProgram,
+  LAMPORTS_PER_SOL 
+} from '@solana/web3.js';
+import { Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { ethers } from 'ethers';
 import QRCode from 'qrcode.react';
 import './styles.css';
@@ -92,6 +99,8 @@ function App() {
   const [txStatus, setTxStatus] = useState('');
   const [txHash, setTxHash] = useState('');
   const [providers, setProviders] = useState({});
+  const [transactionHistory, setTransactionHistory] = useState([]);
+  const [prices, setPrices] = useState({});
 
   useEffect(() => {
     try {
@@ -397,6 +406,50 @@ function App() {
 
     const batchTx = await tonConnectUI.wallet.sendBatchTransaction(transactions);
     return batchTx;
+  };
+
+  // Yardımcı fonksiyonları ekleyelim
+  const isValidAddress = (address, blockchain) => {
+    try {
+      switch (blockchain) {
+        case 'TON':
+          return Address.parse(address) !== null;
+        case 'ETH':
+        case 'BSC':
+          return Web3.utils.isAddress(address);
+        case 'SOLANA':
+          return PublicKey.isOnCurve(new PublicKey(address));
+        default:
+          return false;
+      }
+    } catch {
+      return false;
+    }
+  };
+
+  const getBalance = async () => {
+    if (!tonConnectUI.connected || !tonConnectUI.wallet) return 0;
+
+    switch (paymentData.blockchain) {
+      case 'TON':
+        const response = await fetch(`https://toncenter.com/api/v2/getAddressBalance?address=${tonConnectUI.wallet.address}`);
+        const data = await response.json();
+        return Number(data.result) / 1e9;
+      // Diğer blockchain'ler için balance kontrolleri eklenebilir
+      default:
+        return 0;
+    }
+  };
+
+  const checkScamDatabase = async (address) => {
+    try {
+      // Örnek bir scam kontrolü - gerçek uygulamada bir API'ye istek atılabilir
+      const response = await fetch(`https://api.scamdb.example/check/${address}`);
+      const data = await response.json();
+      return data.isScam;
+    } catch {
+      return false; // API hatası durumunda güvenli tarafta kalalım
+    }
   };
 
   if (loading) {
