@@ -8,6 +8,7 @@ import { ethers } from 'ethers';
 import TronWeb from 'tronweb';
 import QRCode from 'qrcode.react';
 import './styles.css';
+import { ERC20_ABI } from './constants/abi';
 
 // Desteklenen blockchain'ler ve özellikleri
 const SUPPORTED_NETWORKS = {
@@ -250,7 +251,21 @@ function App() {
   };
 
   const handleTonPayment = async () => {
-    // Mevcut TON ödeme kodu...
+    if (!connected || !wallet) {
+      throw new Error('TON wallet not connected');
+    }
+
+    const amount = toNano(paymentData.amount.toString());
+    
+    return await wallet.sendTransaction({
+      validUntil: Math.floor(Date.now() / 1000) + 600,
+      messages: [
+        {
+          address: paymentData.walletAddress,
+          amount: amount
+        }
+      ]
+    });
   };
 
   const handleEVMPayment = async () => {
@@ -258,7 +273,6 @@ function App() {
     const networkData = SUPPORTED_NETWORKS[paymentData.blockchain];
     
     if (paymentData.paymentMethod === networkData.currencies.USDT.symbol) {
-      // Token transferi
       const tokenContract = new web3.eth.Contract(
         ERC20_ABI,
         networkData.currencies.USDT.address
@@ -274,7 +288,6 @@ function App() {
         .transfer(paymentData.walletAddress, amount)
         .send({ from: wallet.address });
     } else {
-      // Native coin transferi
       return await web3.eth.sendTransaction({
         from: wallet.address,
         to: paymentData.walletAddress,
