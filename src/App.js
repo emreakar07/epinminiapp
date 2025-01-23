@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { WebApp } from '@twa-dev/sdk/react';
+import { WebApp } from '@twa-dev/sdk';
 import { TonConnectButton } from '@tonconnect/ui-react';
 import { TonConnectUIProvider, useTonConnectUI } from '@tonconnect/ui-react';
 import { beginCell, toNano, Address } from '@ton/core';
