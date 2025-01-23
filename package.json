@@ -7,7 +7,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "@ton/core": "^0.53.0",
-    "@tonconnect/ui-react": "^2.0.0",
+    "@tonconnect/ui-react": "^2.0.0-beta.11",
     "@twa-dev/sdk": "^6.9.2",
     "qrcode.react": "^3.2.0",
     "react": "^18.2.0",

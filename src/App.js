@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WebApp } from '@twa-dev/sdk';
-import { TonConnectButton, useTonConnect } from '@tonconnect/ui-react';
+import { TonConnectButton } from '@tonconnect/ui-react';
+import { TonConnectUIProvider, useTonConnectUI } from '@tonconnect/ui-react';
 import { beginCell, toNano, Address } from '@ton/core';
 import Web3 from 'web3';
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
@@ -84,7 +85,7 @@ const SUPPORTED_WALLETS = {
 };
 
 function App() {
-  const { connected, wallet } = useTonConnect();
+  const [tonConnectUI] = useTonConnectUI();
   const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -157,7 +158,7 @@ function App() {
 
   const monitorTransaction = async (hash) => {
     try {
-      const tx = await wallet.client.getTransaction(hash);
+      const tx = await tonConnectUI.wallet.client.getTransaction(hash);
       if (tx.status === 'confirmed') {
         setTxStatus('success');
         WebApp.showPopup({
@@ -181,7 +182,7 @@ function App() {
     try {
       setLoading(true);
       
-      if (!connected) {
+      if (!tonConnectUI.connected) {
         throw new Error('Cüzdan bağlı değil');
       }
 
@@ -222,13 +223,13 @@ function App() {
   };
 
   const handleTonPayment = async () => {
-    if (!connected || !wallet) {
+    if (!tonConnectUI.connected || !tonConnectUI.wallet) {
       throw new Error('TON wallet not connected');
     }
 
     const amount = toNano(paymentData.amount.toString());
     
-    return await wallet.sendTransaction({
+    return await tonConnectUI.wallet.sendTransaction({
       validUntil: Math.floor(Date.now() / 1000) + 600,
       messages: [
         {
@@ -257,10 +258,10 @@ function App() {
 
       return await tokenContract.methods
         .transfer(paymentData.walletAddress, amount)
-        .send({ from: wallet.address });
+        .send({ from: tonConnectUI.wallet.address });
     } else {
       return await web3.eth.sendTransaction({
-        from: wallet.address,
+        from: tonConnectUI.wallet.address,
         to: paymentData.walletAddress,
         value: web3.utils.toWei(paymentData.amount.toString(), 'ether')
       });
@@ -278,26 +279,26 @@ function App() {
       const transaction = new Transaction().add(
         Token.createTransferInstruction(
           TOKEN_PROGRAM_ID,
-          wallet.publicKey,
+          tonConnectUI.wallet.publicKey,
           destinationAccount,
-          wallet.publicKey,
+          tonConnectUI.wallet.publicKey,
           [],
           paymentData.amount * (10 ** SUPPORTED_NETWORKS.SOLANA.currencies.USDT.decimals)
         )
       );
 
-      return await wallet.signAndSendTransaction(transaction);
+      return await tonConnectUI.wallet.signAndSendTransaction(transaction);
     } else {
       // SOL transferi
       const transaction = new Transaction().add(
         SystemProgram.transfer({
-          fromPubkey: wallet.publicKey,
+          fromPubkey: tonConnectUI.wallet.publicKey,
           toPubkey: new PublicKey(paymentData.walletAddress),
           lamports: paymentData.amount * LAMPORTS_PER_SOL
         })
       );
 
-      return await wallet.signAndSendTransaction(transaction);
+      return await tonConnectUI.wallet.signAndSendTransaction(transaction);
     }
   };
 
@@ -334,10 +335,10 @@ function App() {
   };
 
   const fetchTransactionHistory = async () => {
-    if (!connected || !wallet) return;
+    if (!tonConnectUI.connected || !tonConnectUI.wallet) return;
     
     const networkData = SUPPORTED_NETWORKS[paymentData.blockchain];
-    const response = await fetch(`${networkData.apiUrl}/address/${wallet.address}/transactions`);
+    const response = await fetch(`${networkData.apiUrl}/address/${tonConnectUI.wallet.address}/transactions`);
     const history = await response.json();
     
     setTransactionHistory(history.map(tx => ({
@@ -394,7 +395,7 @@ function App() {
       token: recipient.token
     }));
 
-    const batchTx = await wallet.sendBatchTransaction(transactions);
+    const batchTx = await tonConnectUI.wallet.sendBatchTransaction(transactions);
     return batchTx;
   };
 
@@ -420,7 +421,7 @@ function App() {
     <div className="payment-container">
       <TonConnectButton />
       
-      {connected && paymentData && (
+      {tonConnectUI.connected && paymentData && (
         <>
           <div className="payment-details">
             <h2>Ödeme Detayları</h2>
@@ -463,4 +464,10 @@ function App() {
   );
 }
 
-export default App;
+export default function AppWithProvider() {
+  return (
+    <TonConnectUIProvider manifestUrl="https://your-manifest-url.json">
+      <App />
+    </TonConnectUIProvider>
+  );
+}
