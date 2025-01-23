@@ -11,7 +11,11 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL 
 } from '@solana/web3.js';
-import { Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { 
+  createTransferInstruction,
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID 
+} from '@solana/spl-token';
 import { ethers } from 'ethers';
 import QRCode from 'qrcode.react';
 import './styles.css';
@@ -205,7 +209,7 @@ function App() {
           tx = await handleEVMPayment();
           break;
         case 'SOLANA':
-          tx = await handleSolanaPayment();
+          tx = await handleSolanaTokenTransfer();
           break;
         default:
           throw new Error('Desteklenmeyen blockchain');
@@ -277,16 +281,16 @@ function App() {
     }
   };
 
-  const handleSolanaPayment = async () => {
-    const connection = providers.solana;
-    
+  const handleSolanaTokenTransfer = async () => {
     if (paymentData.paymentMethod === 'USDT') {
-      // SPL Token transferi
       const tokenMint = new PublicKey(SUPPORTED_NETWORKS.SOLANA.currencies.USDT.address);
-      const destinationAccount = new PublicKey(paymentData.walletAddress);
-      
+      const destinationAccount = await getAssociatedTokenAddress(
+        tokenMint,
+        new PublicKey(paymentData.walletAddress)
+      );
+
       const transaction = new Transaction().add(
-        Token.createTransferInstruction(
+        createTransferInstruction(
           TOKEN_PROGRAM_ID,
           tonConnectUI.wallet.publicKey,
           destinationAccount,
