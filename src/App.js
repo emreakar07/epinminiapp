@@ -5,7 +5,6 @@ import { beginCell, toNano, Address } from '@ton/core';
 import Web3 from 'web3';
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import { ethers } from 'ethers';
-import TronWeb from 'tronweb';
 import QRCode from 'qrcode.react';
 import './styles.css';
 import { ERC20_ABI } from './constants/abi';
@@ -59,22 +58,6 @@ const SUPPORTED_NETWORKS = {
     rpcUrl: 'https://bsc-dataseed.binance.org',
     explorer: 'https://bscscan.com/tx/'
   },
-  TRON: {
-    name: 'TRON',
-    currencies: {
-      TRX: {
-        decimals: 6,
-        symbol: 'TRX'
-      },
-      USDT: {
-        decimals: 6,
-        symbol: 'USDT',
-        address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
-      }
-    },
-    rpcUrl: 'https://api.trongrid.io',
-    explorer: 'https://tronscan.org/#/transaction/'
-  },
   SOLANA: {
     name: 'Solana',
     currencies: {
@@ -97,8 +80,7 @@ const SUPPORTED_WALLETS = {
   TON: ['TonKeeper', 'TonHub', 'OpenMask'],
   ETH: ['MetaMask', 'WalletConnect', 'Coinbase'],
   BSC: ['MetaMask', 'TrustWallet', 'Binance'],
-  SOLANA: ['Phantom', 'Solflare', 'Slope'],
-  TRON: ['TronLink', 'TokenPocket']
+  SOLANA: ['Phantom', 'Solflare', 'Slope']
 };
 
 function App() {
@@ -170,14 +152,6 @@ function App() {
       newProviders.solana = connection;
     }
 
-    if (paymentData?.blockchain === 'TRON') {
-      const tronWeb = new TronWeb({
-        fullHost: SUPPORTED_NETWORKS.TRON.rpcUrl,
-        headers: { "TRON-PRO-API-KEY": process.env.REACT_APP_TRON_API_KEY }
-      });
-      newProviders.tron = tronWeb;
-    }
-
     setProviders(newProviders);
   };
 
@@ -222,9 +196,6 @@ function App() {
           break;
         case 'SOLANA':
           tx = await handleSolanaPayment();
-          break;
-        case 'TRON':
-          tx = await handleTronPayment();
           break;
         default:
           throw new Error('Desteklenmeyen blockchain');
@@ -330,28 +301,6 @@ function App() {
     }
   };
 
-  const handleTronPayment = async () => {
-    const tronWeb = providers.tron;
-    
-    if (paymentData.paymentMethod === 'USDT') {
-      // TRC20 Token transferi
-      const contract = await tronWeb.contract().at(SUPPORTED_NETWORKS.TRON.currencies.USDT.address);
-      const decimals = SUPPORTED_NETWORKS.TRON.currencies.USDT.decimals;
-      const amount = paymentData.amount * (10 ** decimals);
-
-      return await contract.transfer(
-        paymentData.walletAddress,
-        amount.toString()
-      ).send();
-    } else {
-      // TRX transferi
-      return await tronWeb.trx.sendTransaction(
-        paymentData.walletAddress,
-        paymentData.amount * 1_000_000
-      );
-    }
-  };
-
   const generatePaymentUri = () => {
     if (!paymentData) return '';
     
@@ -374,9 +323,6 @@ function App() {
         
       case 'SOLANA':
         return `solana:${paymentData.walletAddress}?amount=${paymentData.amount}&label=Payment`;
-        
-      case 'TRON':
-        return `tron:${paymentData.walletAddress}?amount=${paymentData.amount * 1_000_000}`;
         
       default:
         return '';
